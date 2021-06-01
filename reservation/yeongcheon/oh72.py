@@ -1,5 +1,8 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 
 def conn_browser(path):
@@ -48,6 +51,13 @@ def log_in(driver, param_id, param_pw):
     input_id.send_keys(param_id)
     input_pw.send_keys(param_pw)
     input_pw.send_keys(Keys.ENTER)
+    try:
+        WebDriverWait(driver, 3).until(EC.alert_is_present())
+        alert = driver.switch_to.alert
+        alert.accept()
+        print('Login')
+    except Exception:
+        print('No alert')
 
 
 def log_out(driver):
@@ -57,8 +67,15 @@ def log_out(driver):
             if button_logout is not None:
                 button_logout.click()
                 break
-        except:
+        except Exception:
             continue
+    try:
+        WebDriverWait(driver, 3).until(EC.alert_is_present())
+        alert = driver.switch_to.alert
+        alert.accept()
+        print('Logout')
+    except Exception:
+        print('No alert')
 
 
 def into_tab_reservation(driver):
@@ -73,15 +90,10 @@ def into_tab_reservation(driver):
             continue
 
 
-def find_date(driver, target='20210530', today='20210511'):
-    # set calendar(?)
-    # calendar_change(?,1번 달력,2번 달력,오늘)
-    # calendar_change('yyyyMM','yyyyMM','yyyyMM','yyyyMMdd')
+def find_date(driver, target, today):
     cur_yyyyMM = today[:6]
     target_yyyyMM = target[:6]
     target_dd = target[6:]
-    # driver.execute_script(
-    #     "calendar_change('" + cur_yyyyMM + "','" + cur_yyyyMM + "','" + target_yyyyMM + "','" + today + "')")
 
     # calculate date
     week_idx = 1  # 1-6
@@ -92,7 +104,7 @@ def find_date(driver, target='20210530', today='20210511'):
     elif cur_yyyyMM != target_yyyyMM:
         path_base = '//*[@id="calendar_view_ajax_2"]/div/div[3]/table/tbody/'
     target_path = path_base + 'tr[' + str(week_idx) + ']/td[' + str(day_idx) + ']//a'
-    print(target_path)
+    # print(target_path)
     firstWeekLastDay = driver.find_element_by_xpath(target_path)
     gap = int(target_dd) - int(firstWeekLastDay.text)
     # ex1) 20210530(target), 20210511(open), 1(firstWeekLastDay)
@@ -117,3 +129,95 @@ def find_date(driver, target='20210530', today='20210511'):
             target_path = path_base + 'tr[1]/td[' + str(day_idx) + ']//a'
             target_element = driver.find_element_by_xpath(target_path)
         target_element.click()
+
+
+def find_term(driver, tm):
+    # ex) tm = '0710'
+    tm = '1410'
+    hh24 = tm[:2]
+
+    # 1. 시간대 선택(1부, 2부)
+    # term_path = '//*[@id="cm_time_live"]/div[2]/div[1]/*[@class="yc"]'  # 1부 경로
+    # term_path = '//*[@id="cm_time_live"]/div[2]/div[2]/*[@class="yc"]'  # 2부 경로
+    term_path = '//*[@id="cm_time_live"]/div[2]//*[@class="yc"]'  # 1부, 2부 상관없이 수집
+    try:
+        # term_arr: 1, 2부를 합쳐 현재 선택 가능한 모든 옵션
+        term_arr = WebDriverWait(driver, 5).until(
+            EC.presence_of_all_elements_located((By.XPATH, term_path))
+        )
+    except Exception:
+        print(Exception)
+    # 0 <= len(term_arr) <= 3
+    if len(term_arr) == 0:
+        print('해당 날짜 예약 불가능')
+        return
+
+    checker = False
+    for a in term_arr:
+        print(a.text)
+        if a.text[:2] == hh24:
+            checker = True
+            a.click()
+    if not checker:
+        for a in term_arr:
+            gap = int(a.text[:2]) - int(hh24)
+            if gap == 1:
+                a.click()
+                break
+            if gap == -1:
+                a.click()
+                break
+            if gap == -2:
+                a.click()
+                break
+            if gap == 2:
+                a.click()
+                break
+            if gap == -3:
+                a.click()
+                break
+            if gap == -3:
+                a.click()
+                break
+        # 1부: 06, 07, 08
+        # 2부: 11, 12, 13, 14
+        term_arr[0].click() # TODO 이건 그냥 제일 빠른거...
+
+    # 2. 상세 시간 선택
+    theIdx = 0
+    time_path = '//*[@id="timelist_course_ajax"]/div[2]/table/tbody//*[@class="cm_tlrks"]'
+    btn_path = '//*[@id="timelist_course_ajax"]/div[2]/table/tbody//*[@class="cm_dPdir"]/a'
+    # table/tbody/tr[theIdx]/td[4]/a
+    # the_btn = btn_reserve[theIdx]
+    while True:
+        try:
+            time_arr = driver.find_elements_by_xpath(time_path)
+            if time_arr is not None:
+                break
+        except Exception:
+            print(Exception)
+            continue
+    while True:
+        try:
+            btn_arr = driver.find_elements_by_xpath(btn_path)
+            if btn_arr is not None:
+                break
+        except Exception:
+            print(Exception)
+            continue
+    print(len(btn_arr))
+    # 0 <= len(time_arr) <= ?
+    for t in time_arr:
+        theIdx += 1
+        print(theIdx, t.text, btn_arr[theIdx-1].text)
+    btn_arr[4].click()
+    return 0
+    # TODO 예약 버튼 누른 뒤 아래 코드 실행
+    driver.execute_script("javascript:subcmd1('R')")
+    try:
+        WebDriverWait(driver, 3).until(EC.alert_is_present())
+        alert = driver.switch_to.alert
+        alert.accept()
+        print('Confirm reservation')
+    except Exception:
+        print('No alert')

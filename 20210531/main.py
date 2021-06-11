@@ -1,3 +1,5 @@
+import datetime
+
 import numpy as np
 
 from flask import Flask, render_template, request
@@ -18,6 +20,8 @@ def upload():
     filepath = f"static/{image.filename}"
     image.save(filepath)
 
+    img1 = cv2.imread(filepath)
+    height, width = img1.shape[:2]
     # # numpy로 이미지 처리
     # npimage = cv2.imread(filepath)
     # filepath2 = f"static/np{image.filename}"
@@ -42,32 +46,30 @@ def upload():
     # mimg2 = cv2.warpAffine(img2, m, (300, 300))
     # cv2.imwrite(filepath5, mimg2)
 
-    img1 = cv2.imread(filepath)
     filepath30 = f"static/rot30_{image.filename}"
     filepath60 = f"static/rot60_{image.filename}"
     filepath90 = f"static/rot90_{image.filename}"
     filepath120 = f"static/rot120_{image.filename}"
     filepath150 = f"static/rot150_{image.filename}"
     filepath180 = f"static/rot180_{image.filename}"
-    m30 = cv2.getRotationMatrix2D((240, 150), 30, 1)
-    m60 = cv2.getRotationMatrix2D((240, 150), 60, 1)
-    m90 = cv2.getRotationMatrix2D((240, 150), 90, 1)
-    m120 = cv2.getRotationMatrix2D((240, 150), 120, 1)
-    m150 = cv2.getRotationMatrix2D((240, 150), 150, 1)
-    m180 = cv2.getRotationMatrix2D((240, 150), 180, 1)
-    print(m30)
-    print(m60)
-    print(m90)
-    print(m120)
-    print(m150)
-    print(m180)
-
-    rot30 = cv2.warpAffine(img1, m30, (480, 478))
-    rot60 = cv2.warpAffine(img1, m60, (480, 478))
-    rot90 = cv2.warpAffine(img1, m90, (480, 478))
-    rot120 = cv2.warpAffine(img1, m120, (480, 478))
-    rot150 = cv2.warpAffine(img1, m150, (480, 478))
-    rot180 = cv2.warpAffine(img1, m180, (480, 478))
+    m30 = cv2.getRotationMatrix2D((width/2, height/2), 30, 1)
+    m60 = cv2.getRotationMatrix2D((width/2, height/2), 60, 1)
+    m90 = cv2.getRotationMatrix2D((width/2, height/2), 90, 1)
+    m120 = cv2.getRotationMatrix2D((width/2, height/2), 120, 1)
+    m150 = cv2.getRotationMatrix2D((width/2, height/2), 150, 1)
+    m180 = cv2.getRotationMatrix2D((width/2, height/2), 180, 1)
+    # print(m30)
+    # print(m60)
+    # print(m90)
+    # print(m120)
+    # print(m150)
+    # print(m180)
+    rot30 = cv2.warpAffine(img1, m30, (width, height))
+    rot60 = cv2.warpAffine(img1, m60, (width, height))
+    rot90 = cv2.warpAffine(img1, m90, (width, height))
+    rot120 = cv2.warpAffine(img1, m120, (width, height))
+    rot150 = cv2.warpAffine(img1, m150, (width, height))
+    rot180 = cv2.warpAffine(img1, m180, (width, height))
     cv2.imwrite(filepath30, rot30)
     cv2.imwrite(filepath60, rot60)
     cv2.imwrite(filepath90, rot90)
@@ -89,4 +91,30 @@ def upload():
                            )
 
 
-app.run(host='127.0.0.1', port=5000)
+@app.route("/addimg", methods=['POST'])
+def add():
+    # img1 = cv2.imdecode(np.fromstring(request.files['file1'].read(), np.uint8), cv2.IMREAD_UNCHANGED)
+    # img2 = cv2.imdecode(np.fromstring(request.files['file2'].read(), np.uint8), cv2.IMREAD_UNCHANGED)
+    # height1, width1 = img1.shape[:2]
+    # height2, width2 = img2.shape[:2]
+
+    param1 = request.files['file1']
+    param2 = request.files['file2']
+    filepath1 = f"static/{param1.filename}_org1"
+    filepath2 = f"static/{param2.filename}_org2"
+    filepath3 = f"static/{param1.filename}_{param2.filename}_added"
+    param1.save(filepath1)
+    param2.save(filepath2)
+    img1 = cv2.imread(filepath1)
+    img2 = cv2.imread(filepath2)
+    height1, width1 = img1.shape[:2]
+    height2, width2 = img2.shape[:2]
+
+    addcv2 = cv2.add(img1[:100, :100], img2[:100, :100])
+    # cv2.imshow('test', addcv2)
+    cv2.imwrite(filepath3, addcv2)
+    return render_template("print.html",
+                           addimg=filepath3)
+
+
+app.run(host='127.0.0.1', port=5000, debug=True)

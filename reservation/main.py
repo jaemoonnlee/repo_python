@@ -1,4 +1,6 @@
 import time
+
+# pip install -U selenium
 import selenium
 from selenium import webdriver
 from selenium.webdriver import ActionChains
@@ -14,15 +16,25 @@ from yeongcheon.oh72 import log_out
 from yeongcheon.oh72 import close_browser
 import yeongcheon.oh72
 
+# pip install python-dotenv
+from dotenv import dotenv_values
+
 # variables
-browser_path = 'utils/ms/edge/msedgedriver'
-url = 'http://www.oceanhills.com/login/login.asp?returnurl=/pagesite/reservation/live.asp?'
-user_id = 'sh4220'
-user_pw = 'tlsgud4220'
+browser_path = "utils/ms/edge/msedgedriver"
+print(browser_path)
+url = "http://www.oceanhills.com/login/login.asp?returnurl=/pagesite/reservation/live.asp?"
+
+# config = {"USER": "foo", "EMAIL": "foo@example.org"}
+config = dotenv_values("yeongcheon/config/.env")
+print(config)
+
+user_id = config["USER_ID"]
+user_pw = config["USER_PW"]
 
 
 def conn_test(date, term):
-    y4m2d2 = time.strftime('%Y%m%d', time.localtime())
+    y4m2d2 = time.strftime("%Y%m%d", time.localtime())
+    print(y4m2d2)
     driver = yeongcheon.oh72.conn_browser(browser_path)
     yeongcheon.oh72.open_browser(driver, url)
     yeongcheon.oh72.log_in(driver, user_id, user_pw)
@@ -39,13 +51,13 @@ def conn_test(date, term):
 
 
 # main method
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 날짜(yyyyMMdd)
     # 시간(24hhmm)
-    target_date = '20210619'  # 날짜
-    target_date = '20210614'
+    target_date = "20210619"  # 날짜
+    target_date = "20210614"
     # target_date = input()
-    target_term = '0710'  # 시간
-    target_term = '0710'
+    target_term = "0710"  # 시간
+    target_term = "0710"
     # target_term = input()
     conn_test(target_date, target_term)

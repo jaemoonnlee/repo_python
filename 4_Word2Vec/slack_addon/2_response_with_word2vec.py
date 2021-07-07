@@ -16,6 +16,7 @@ import nltk
 from gensim.models import Word2Vec
 from gensim.models import KeyedVectors
 from nltk.corpus import stopwords
+from scipy.sparse import data
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 
@@ -64,7 +65,8 @@ corpus = []
 for words in df['cleaned']:
     corpus.append(words.split())
 
-with open('document_embedding_list.pickle', 'rb') as f:
+# with open('document_embedding_list.pickle', 'rb') as f:
+with open('document_embedding_list_full.pickle', 'rb') as f:
     document_embedding_list = pickle.load(f)
 
 cosine_similarities = cosine_similarity(document_embedding_list, document_embedding_list)
@@ -75,12 +77,18 @@ def recommendations(title):
 
     # 책의 제목을 입력하면 해당 제목의 인덱스를 리턴받아 idx에 저장.
     indices = pd.Series(df.index, index = df['title']).drop_duplicates()    
+    print("HERE ?")
+    # TODO 이후 진입 불가?
+    # [TITLE]That Will Never Work: The Birth of Netflix and the Amazing Life of an Idea
+    # 외에는 아래에서 에러 나는듯?
     idx = indices[title]
+    print("3")
 
     # 입력된 책과 줄거리(document embedding)가 유사한 책 5개 선정.
     sim_scores = list(enumerate(cosine_similarities[idx]))
     sim_scores = sorted(sim_scores, key = lambda x: x[1], reverse = True)
     sim_scores = sim_scores[1:6]
+    print("sim_scores", sim_scores)
 
     # 가장 유사한 책 5권의 인덱스
     book_indices = [i[0] for i in sim_scores]
@@ -94,6 +102,8 @@ def recommendations(title):
     dataList =[]
     for index, row in recommend.iterrows():
         dataList.append({"title": row["title"], "image_link": row["image_link"]})
+    # for x in dataList:
+    #     print("recommendations()\n", x)
     return dataList
 #         response = requests.get(row['image_link'])
 #         img = Image.open(BytesIO(response.content))
@@ -109,7 +119,7 @@ def recommendations(title):
     #     plt.title(row['title'])
 
 
-recommendations("That Will Never Work: The Birth of Netflix and the Amazing Life of an Idea")
+# recommendations("That Will Never Work: The Birth of Netflix and the Amazing Life of an Idea")
 
 ####################################################################################
 # 코사인 유사도
@@ -124,7 +134,7 @@ app = Flask(__name__)
 def default_listener():
 	# 슬랙에서 보낸 request 데이터를 json으로 파싱한다.
 	slack_event = json.loads(request.data)
-	print(slack_event)
+	print(">> slack_event\n", slack_event)
 
 	# 인자 중 challenge가 있으면 해당 인자의 값을 반환한다.
 	# slack api specification. 참고:https://api.slack.com/
